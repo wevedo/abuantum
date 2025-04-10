@@ -1007,55 +1007,57 @@ try {
     }
 
 // Message content processing
-console.log('[DEBUG] Processing message...');
 const texte = ms.message?.conversation || 
              ms.message?.extendedTextMessage?.text || 
-             ms.message?.imageMessage?.caption || '';
-console.log('[DEBUG] Raw message content:', texte);
+             ms.message?.imageMessage?.caption || 
+             '';
+console.log('[DEBUG] Raw message text:', texte); // Debug log
 
-const arg = typeof texte === 'string' ? texte.trim().split(/\s+/).slice(1) : [];  // Fixed missing )
-console.log('[DEBUG] Command arguments:', arg);
-
+const arg = typeof texte === 'string' ? texte.trim().split(/\s+/).slice(1) : [];
 const verifCom = typeof texte === 'string' && texte.startsWith(PREFIX);
-console.log('[DEBUG] Is command (starts with prefix)?', verifCom, 'Prefix:', PREFIX);
-
 const com = verifCom ? texte.slice(PREFIX.length).trim().split(/\s+/)[0]?.toLowerCase() : null;
-console.log('[DEBUG] Extracted command:', com);
+
+console.log('[DEBUG] Command verification:', { verifCom, com, arg }); // Debug log
 
 if (verifCom && com) {
-    console.log('[DEBUG] Valid command structure detected');
-    
     const cmd = Array.isArray(evt.cm) 
-        ? evt.cm.find((c) => 
-            c?.nomCom === com || 
-            (Array.isArray(c?.aliases) && c.aliases.includes(com))
-          )
+        ? evt.cm.find((c) => {
+            const found = c?.nomCom === com || (Array.isArray(c?.aliases) && c.aliases.includes(com));
+            console.log('[DEBUG] Command match check:', { command: c?.nomCom, found }); // Debug log
+            return found;
+          })
         : null;
-    console.log('[DEBUG] Found command definition:', cmd);
+
+    console.log('[DEBUG] Found command:', cmd ? cmd.nomCom : 'none'); // Debug log
 
     if (cmd) {
-        console.log('[DEBUG] Command exists in registry');
         try {
             // Permission check
             const mode = conf.MODE?.toLowerCase();
-            console.log('[DEBUG] Current MODE:', mode, '| SuperUser status:', superUser);
+            console.log('[DEBUG] Permission check:', { mode, superUser }); // Debug log
             
+            // Strict mode check
             if (mode === "no" && !superUser) {
-                console.log('[SECURITY] Command BLOCKED - MODE is "no" and user is not superUser');
+                console.log(`[BLOCKED] Command "${com}" blocked for ${auteurMessage} - MODE is no and user is not superUser`);
                 return;
             }
             
-            console.log('[DEBUG] Permission check passed - executing command');
-            
+            // Optional: Default mode behavior (uncomment if needed)
+            // if (mode !== "yes" && !superUser) {
+            //     console.log(`[BLOCKED] Command "${com}" blocked - MODE not set to "yes" and user is not superUser`);
+            //     return;
+            // }
+
+            console.log('[EXECUTING] Command:', com); // Debug log
+
             // Reply function with context
             const repondre = async (text, options = {}) => {
-                console.log('[DEBUG] Preparing reply...');
                 if (typeof text !== 'string') {
-                    console.log('[WARNING] Reply text is not a string');
+                    console.error('[ERROR] Reply text must be a string');
                     return;
                 }
                 try {
-                    console.log('[DEBUG] Attempting to send reply...');
+                    console.log('[REPLY] Attempting to send:', { text, options }); // Debug log
                     await adams.sendMessage(origineMessage, { 
                         text,
                         ...createContext(auteurMessage, {
@@ -1063,23 +1065,24 @@ if (verifCom && com) {
                             body: options.body || ""
                         })
                     }, { quoted: ms });
-                    console.log('[SUCCESS] Reply sent successfully');
+                    console.log('[SUCCESS] Reply sent successfully'); // Debug log
                 } catch (err) {
                     console.error('[ERROR] Reply failed:', err);
                 }
             };
 
-            console.log('[DEBUG] Executing command:', cmd.nomCom);
-            await cmd.fonction(ms, arg, repondre, evt);
-            console.log('[DEBUG] Command execution completed');
+            // Execute command
+            await cmd.fonction({ auteurMessage, origineMessage, repondre, arg, ms, evt });
+            console.log('[SUCCESS] Command executed successfully'); // Debug log
+
         } catch (err) {
             console.error('[ERROR] Command execution failed:', err);
         }
     } else {
-        console.log('[DEBUG] Command not found in registry');
+        console.log('[DEBUG] No matching command found'); // Debug log
     }
 } else {
-    console.log('[DEBUG] Not a valid command (missing prefix or command name)');
+    console.log('[DEBUG] Not a valid command'); // Debug log
 }
 
                 // Add reaction
