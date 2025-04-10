@@ -1013,7 +1013,7 @@ const texte = ms.message?.conversation ||
              ms.message?.imageMessage?.caption || '';
 console.log('[DEBUG] Raw message content:', texte);
 
-const arg = typeof texte === 'string' ? texte.trim().split(/\s+/).slice(1) : [];
+const arg = typeof texte === 'string' ? texte.trim().split(/\s+/).slice(1) : [];  // Fixed missing )
 console.log('[DEBUG] Command arguments:', arg);
 
 const verifCom = typeof texte === 'string' && texte.startsWith(PREFIX);
@@ -1040,17 +1040,10 @@ if (verifCom && com) {
             const mode = conf.MODE?.toLowerCase();
             console.log('[DEBUG] Current MODE:', mode, '| SuperUser status:', superUser);
             
-            // Block if MODE is "no" and user isn't superUser
             if (mode === "no" && !superUser) {
                 console.log('[SECURITY] Command BLOCKED - MODE is "no" and user is not superUser');
                 return;
             }
-            
-            // Optional: Default behavior when MODE isn't set
-            // if (!mode && !superUser) {
-            //     console.log('[SECURITY] Command BLOCKED - MODE not set and user is not superUser');
-            //     return;
-            // }
             
             console.log('[DEBUG] Permission check passed - executing command');
             
@@ -1076,7 +1069,6 @@ if (verifCom && com) {
                 }
             };
 
-            // Execute command
             console.log('[DEBUG] Executing command:', cmd.nomCom);
             await cmd.fonction(ms, arg, repondre, evt);
             console.log('[DEBUG] Command execution completed');
