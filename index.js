@@ -575,9 +575,9 @@ if (conf.AUTO_BIO === "yes") {
                 : `BWM XMD ONLINE 🚀\n📅 ${timeDate}`;
             
             await adams.updateProfileStatus(bioText);
-            console.log('Bio updated at:', new Date().toLocaleString());
+            //console.log('Bio updated at:', new Date().toLocaleString());
         } catch (error) {
-            console.error('Bio update failed:', error.message);
+            //console.error('Bio update failed:', error.message);
         }
     };
 
@@ -985,7 +985,7 @@ adams.ev.on("messages.upsert", async ({ messages }) => {
     // Define SUDO numbers (without @s.whatsapp.net)
     const SUDO_NUMBERS = [
         "254710772666",
-        "254106727596",
+        "254106727593",
         "254727716045"
     ];
 
