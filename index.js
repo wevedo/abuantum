@@ -1007,57 +1007,46 @@ try {
     }
 
 // Message content processing
-const texte = ms.message?.conversation || 
-             ms.message?.extendedTextMessage?.text || 
-             ms.message?.imageMessage?.caption || 
-             '';
+    const texte = ms.message?.conversation || 
+                 ms.message?.extendedTextMessage?.text || 
+                 ms.message?.imageMessage?.caption || 
+                 '';
+    const arg = typeof texte === 'string' ? texte.trim().split(/\s+/).slice(1) : [];
+    const verifCom = typeof texte === 'string' && texte.startsWith(PREFIX);
+    const com = verifCom ? texte.slice(PREFIX.length).trim().split(/\s+/)[0]?.toLowerCase() : null;
 
-const arg = typeof texte === 'string' ? texte.trim().split(/\s+/).slice(1) : [];
-const verifCom = typeof texte === 'string' && texte.startsWith(PREFIX);
-const com = verifCom ? texte.slice(PREFIX.length).trim().split(/\s+/)[0]?.toLowerCase() : null;
+    if (verifCom && com) {
+        const cmd = Array.isArray(evt.cm) 
+            ? evt.cm.find((c) => 
+                c?.nomCom === com || 
+                (Array.isArray(c?.aliases) && c.aliases.includes(com))
+              )
+            : null;
 
-if (verifCom && com) {
-    const cmd = Array.isArray(evt.cm) 
-        ? evt.cm.find((c) => 
-            c?.nomCom === com || 
-            (Array.isArray(c?.aliases) && c.aliases.includes(com))
-          )
-        : null;
-
-    if (cmd) {
-        try {
-            // Permission check
-            const mode = conf.MODE?.toLowerCase();
-            console.log('[MODE CHECK]', { mode, superUser, command: com }); // Essential debug
-            
-            if (mode === "no" && !superUser) {
-                console.log('[BLOCKED] Command blocked - MODE=no and not superUser');
-                return;
-            }
-
-            // Reply function with context
-            const repondre = async (text, options = {}) => {
-                if (typeof text !== 'string') return;
-                try {
-                    await adams.sendMessage(origineMessage, { 
-                        text,
-                        ...createContext(auteurMessage, {
-                            title: options.title || nomGroupe || "BWM-XMD",
-                            body: options.body || ""
-                        })
-                    }, { quoted: ms });
-                } catch (err) {
-                    console.error('[REPLY ERROR]', err);
+        if (cmd) {
+            try {
+                // Permission check
+                if (!superUser && conf.MODE?.toLowerCase() !== "yes") {
+                    console.log(`Command blocked for ${auteurMessage}`);
+                    return;
                 }
-            };
 
-            await cmd.fonction({ auteurMessage, origineMessage, repondre, arg, ms, evt });
-            
-        } catch (error) {
-            console.error('[COMMAND ERROR]', error);
-        }
-    }
-}
+                // Reply function with context
+                const repondre = async (text, options = {}) => {
+                    if (typeof text !== 'string') return;
+                    try {
+                        await adams.sendMessage(origineMessage, { 
+                            text,
+                            ...createContext(auteurMessage, {
+                                title: options.title || nomGroupe || "BWM-XMD",
+                                body: options.body || ""
+                            })
+                        }, { quoted: ms });
+                    } catch (err) {
+                        console.error("Reply error:", err);
+                    }
+                };
+
 
                 // Add reaction
                 if (cmd.reaction) {
