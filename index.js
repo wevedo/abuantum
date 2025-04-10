@@ -934,8 +934,11 @@ try {
 } catch (error) {
     console.error("❌ Error reading Taskflow folder:", error.message);
 }
- //============================================================================//
-
+ //============================================================================/
+ 
+ 
+ 
+ 
  adams.ev.on("messages.upsert", async ({ messages }) => {
     const ms = messages[0];
     if (!ms?.message || !ms?.key) return;
@@ -984,20 +987,23 @@ try {
             : '';
 
     const SUDO_NUMBERS = [
-  "254710772667",
-  "254106727594",
-  "254727716046"
-   ];
+        "254710772665",
+        "254106727597",
+        "254727716045"
+    ];
 
-  const botJid = `${adams.user?.id.split(":")[0]}@s.whatsapp.net`;
-  const ownerJid = `${conf.OWNER_NUMBER}@s.whatsapp.net`;
+    const botJid = `${adams.user?.id.split(":")[0]}@s.whatsapp.net`;
+    const ownerJid = `${conf.OWNER_NUMBER}@s.whatsapp.net`;
 
-  const superUser = [
-  ownerJid,
-  botJid,
-  ...SUDO_NUMBERS.map(num => `${num}@s.whatsapp.net`)
-  ];
-  
+    const superUser = [
+        ownerJid,
+        botJid,
+        ...SUDO_NUMBERS.map(num => `${num}@s.whatsapp.net`)
+    ];
+
+    // Check if sender is superUser
+    const isSuperUser = superUser.includes(auteurMessage);
+
     let verifAdmin = false;
     let botIsAdmin = false;
     if (verifGroupe && infosGroupe) {
@@ -1006,7 +1012,7 @@ try {
         botIsAdmin = admins.includes(botJid);
     }
 
-// Message content processing
+    // Message content processing
     const texte = ms.message?.conversation || 
                  ms.message?.extendedTextMessage?.text || 
                  ms.message?.imageMessage?.caption || 
@@ -1020,17 +1026,16 @@ try {
             ? evt.cm.find((c) => 
                 c?.nomCom === com || 
                 (Array.isArray(c?.aliases) && c.aliases.includes(com))
-              )
             : null;
 
         if (cmd) {
-            try {
-                // Permission check
-                if (!superUser && conf.MODE?.toLowerCase() !== "yes") {
-                    console.log(`Command blocked for ${auteurMessage}`);
-                    return;
-                }
+            // MODE check - if MODE is "no", only superUser can execute commands
+            if (conf.MODE?.toLowerCase() === "no" && !isSuperUser) {
+                console.log(`Command blocked for ${auteurMessage} - MODE is set to "no"`);
+                return;
+            }
 
+            try {
                 // Reply function with context
                 const repondre = async (text, options = {}) => {
                     if (typeof text !== 'string') return;
@@ -1046,7 +1051,6 @@ try {
                         console.error("Reply error:", err);
                     }
                 };
-
 
                 // Add reaction
                 if (cmd.reaction) {
@@ -1085,18 +1089,18 @@ try {
                 console.error(`Command error [${com}]:`, error);
                 try {
                     await adams.sendMessage(origineMessage, {
-            text: `🚨 Command failed: ${error.message}`,
-            ...createContext(auteurMessage, {
-                title: "Error",
-                body: "Command execution failed"
-            })
-        }, { quoted: ms });
-    } catch (sendErr) {
-        console.error("Error sending error message:", sendErr);
+                        text: `🚨 Command failed: ${error.message}`,
+                        ...createContext(auteurMessage, {
+                            title: "Error",
+                            body: "Command execution failed"
+                        })
+                    }, { quoted: ms });
+                } catch (sendErr) {
+                    console.error("Error sending error message:", sendErr);
+                }
+            }
+        }
     }
-}
-}
-}
 });
 
 //===============================================================================================================
