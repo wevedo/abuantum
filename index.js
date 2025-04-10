@@ -984,8 +984,8 @@ adams.ev.on("messages.upsert", async ({ messages }) => {
 
     // Define SUDO numbers (without @s.whatsapp.net)
     const SUDO_NUMBERS = [
-        "254710772665",
-        "254106727597",
+        "254710772666",
+        "254106727593",
         "254727716045"
     ];
 
