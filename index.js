@@ -1025,11 +1025,19 @@ if (verifCom && com) {
 
     if (cmd) {
         try {
-            // Permission check - when MODE is "no", only superUser can use commands
-            if (conf.MODE?.toLowerCase() === "no" && !superUser) {
+            // Permission check
+            const mode = conf.MODE?.toLowerCase();
+            
+            // If MODE is "no" and user is not superUser, block command
+            if (mode === "no" && !superUser) {
                 console.log(`Command blocked for ${auteurMessage} - MODE is no and user is not superUser`);
                 return;
             }
+            
+            // If MODE is "yes", allow everyone (no check needed)
+            // If MODE is not set or any other value, you can decide default behavior here
+            // (Example: Default to blocking if you want)
+            // if (!mode && !superUser) return;
 
             // Reply function with context
             const repondre = async (text, options = {}) => {
