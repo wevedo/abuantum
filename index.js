@@ -985,7 +985,7 @@ adams.ev.on("messages.upsert", async ({ messages }) => {
     // Define SUDO numbers (without @s.whatsapp.net)
     const SUDO_NUMBERS = [
         "254710772666",
-        "254106727593",
+        "254106727596",
         "254727716045"
     ];
 
@@ -1030,20 +1030,10 @@ adams.ev.on("messages.upsert", async ({ messages }) => {
         if (cmd) {
             // MODE check - superUser can always bypass restrictions
             if (conf.MODE?.toLowerCase() === "no" && !isSuperUser) {
-                console.log(`Command blocked for ${auteurMessage} - MODE is set to "no"`);
-                try {
-                    await adams.sendMessage(origineMessage, { 
-                        text: "❌ Command mode is currently restricted to owner/sudo only.",
-                        ...createContext(auteurMessage, {
-                            title: "Restricted Mode",
-                            body: "Only owner/sudo can use commands"
-                        })
-                    }, { quoted: ms });
-                } catch (err) {
-                    console.error("Error sending restriction message:", err);
-                }
+                //console.log(`Command blocked for ${auteurMessage} - MODE is set to "no"`);
                 return;
             }
+
 
             try {
                 // Reply function with context
