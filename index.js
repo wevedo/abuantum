@@ -1007,42 +1007,62 @@ try {
     }
 
 // Message content processing
+console.log('[DEBUG] Processing message...');
 const texte = ms.message?.conversation || 
              ms.message?.extendedTextMessage?.text || 
-             ms.message?.imageMessage?.caption || 
-             '';
+             ms.message?.imageMessage?.caption || '';
+console.log('[DEBUG] Raw message content:', texte);
+
 const arg = typeof texte === 'string' ? texte.trim().split(/\s+/).slice(1) : [];
+console.log('[DEBUG] Command arguments:', arg);
+
 const verifCom = typeof texte === 'string' && texte.startsWith(PREFIX);
+console.log('[DEBUG] Is command (starts with prefix)?', verifCom, 'Prefix:', PREFIX);
+
 const com = verifCom ? texte.slice(PREFIX.length).trim().split(/\s+/)[0]?.toLowerCase() : null;
+console.log('[DEBUG] Extracted command:', com);
 
 if (verifCom && com) {
+    console.log('[DEBUG] Valid command structure detected');
+    
     const cmd = Array.isArray(evt.cm) 
         ? evt.cm.find((c) => 
             c?.nomCom === com || 
             (Array.isArray(c?.aliases) && c.aliases.includes(com))
           )
         : null;
+    console.log('[DEBUG] Found command definition:', cmd);
 
     if (cmd) {
+        console.log('[DEBUG] Command exists in registry');
         try {
             // Permission check
             const mode = conf.MODE?.toLowerCase();
+            console.log('[DEBUG] Current MODE:', mode, '| SuperUser status:', superUser);
             
-            // If MODE is "no" and user is not superUser, block command
+            // Block if MODE is "no" and user isn't superUser
             if (mode === "no" && !superUser) {
-                console.log(`Command blocked for ${auteurMessage} - MODE is no and user is not superUser`);
+                console.log('[SECURITY] Command BLOCKED - MODE is "no" and user is not superUser');
                 return;
             }
             
-            // If MODE is "yes", allow everyone (no check needed)
-            // If MODE is not set or any other value, you can decide default behavior here
-            // (Example: Default to blocking if you want)
-            // if (!mode && !superUser) return;
-
+            // Optional: Default behavior when MODE isn't set
+            // if (!mode && !superUser) {
+            //     console.log('[SECURITY] Command BLOCKED - MODE not set and user is not superUser');
+            //     return;
+            // }
+            
+            console.log('[DEBUG] Permission check passed - executing command');
+            
             // Reply function with context
             const repondre = async (text, options = {}) => {
-                if (typeof text !== 'string') return;
+                console.log('[DEBUG] Preparing reply...');
+                if (typeof text !== 'string') {
+                    console.log('[WARNING] Reply text is not a string');
+                    return;
+                }
                 try {
+                    console.log('[DEBUG] Attempting to send reply...');
                     await adams.sendMessage(origineMessage, { 
                         text,
                         ...createContext(auteurMessage, {
@@ -1050,10 +1070,25 @@ if (verifCom && com) {
                             body: options.body || ""
                         })
                     }, { quoted: ms });
+                    console.log('[SUCCESS] Reply sent successfully');
                 } catch (err) {
-                    console.error("Reply error:", err);
+                    console.error('[ERROR] Reply failed:', err);
                 }
             };
+
+            // Execute command
+            console.log('[DEBUG] Executing command:', cmd.nomCom);
+            await cmd.fonction(ms, arg, repondre, evt);
+            console.log('[DEBUG] Command execution completed');
+        } catch (err) {
+            console.error('[ERROR] Command execution failed:', err);
+        }
+    } else {
+        console.log('[DEBUG] Command not found in registry');
+    }
+} else {
+    console.log('[DEBUG] Not a valid command (missing prefix or command name)');
+}
 
                 // Add reaction
                 if (cmd.reaction) {
