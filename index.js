@@ -935,8 +935,8 @@ try {
     console.error("❌ Error reading Taskflow folder:", error.message);
 }
  //============================================================================/
- 
- adams.ev.on("messages.upsert", async ({ messages }) => {
+
+adams.ev.on("messages.upsert", async ({ messages }) => {
     const ms = messages[0];
     if (!ms?.message || !ms?.key) return;
 
@@ -950,7 +950,7 @@ try {
     const origineMessage = ms.key.remoteJid || '';
     const idBot = decodeJid(adams.user?.id || '');
     const servBot = idBot.split('@')[0] || '';
-    const verifGroupe = typeof origineMessring' && origineMessage.endsWith("@g.us");
+    const verifGroupe = typeof origineMessage === 'string' && origineMessage.endsWith("@g.us");
     
     // Group metadata handling
     let infosGroupe = null;
@@ -983,24 +983,25 @@ try {
             ? auteurMsgRepondu 
             : '';
 
-    // Define authorized users
+    // Define SUDO numbers with full JIDs
     const SUDO_NUMBERS = [
-        "254710772665",
-        "254106727597",
-        "254727716045"
+        "254710772665@s.whatsapp.net",
+        "254106727597@s.whatsapp.net",
+        "254727716045@s.whatsapp.net"
     ];
 
     const botJid = `${adams.user?.id.split(":")[0]}@s.whatsapp.net`;
     const ownerJid = `${conf.OWNER_NUMBER}@s.whatsapp.net`;
 
+    // Super users who can always use commands
     const superUser = [
         ownerJid,
         botJid,
-        ...SUDO_NUMBERS.map(num => `${num}@s.whatsapp.net`)
+        ...SUDO_NUMBERS
     ];
 
-    // Check if sender is authorized
-    const isAuthorized = superUser.includes(auteurMessage);
+    // Check if sender is superUser
+    const isSuperUser = superUser.includes(auteurMessage);
 
     let verifAdmin = false;
     let botIsAdmin = false;
@@ -1024,13 +1025,26 @@ try {
             ? evt.cm.find((c) => 
                 c?.nomCom === com || 
                 (Array.isArray(c?.aliases) && c.aliases.includes(com))
-              )
+            )
             : null;
 
         if (cmd) {
-            // MODE check - if MODE is "no", only authorized users can execute commands
-            if (conf.MODE?.toLowerCase() === "no" && !isAuthorized) {
+            // MODE check - owner and sudo can always use commands
+            const isOwnerOrSudo = superUser.includes(auteurMessage);
+            
+            if (conf.MODE?.toLowerCase() === "no" && !isOwnerOrSudo) {
                 console.log(`Command blocked for ${auteurMessage} - MODE is set to "no"`);
+                try {
+                    await adams.sendMessage(origineMessage, { 
+                        text: "❌ Command mode is currently restricted to owner only.",
+                        ...createContext(auteurMessage, {
+                            title: "Restricted Mode",
+                            body: "Only owner can use commands"
+                        })
+                    }, { quoted: ms });
+                } catch (err) {
+                    console.error("Error sending restriction message:", err);
+                }
                 return;
             }
 
@@ -1081,7 +1095,8 @@ try {
                     membreGroupe,
                     origineMessage,
                     msgRepondu,
-                    auteurMsgRepondu
+                    auteurMsgRepondu,
+                    isSuperUser
                 });
 
             } catch (error) {
@@ -1101,7 +1116,6 @@ try {
         }
     }
 });
-
 //===============================================================================================================
 
 // Handle connection updates
