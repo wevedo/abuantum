@@ -936,6 +936,7 @@ try {
 }
  //============================================================================/
 
+
 adams.ev.on("messages.upsert", async ({ messages }) => {
     const ms = messages[0];
     if (!ms?.message || !ms?.key) return;
@@ -949,7 +950,6 @@ adams.ev.on("messages.upsert", async ({ messages }) => {
     // Extract core message information
     const origineMessage = ms.key.remoteJid || '';
     const idBot = decodeJid(adams.user?.id || '');
-    const servBot = idBot.split('@')[0] || '';
     const verifGroupe = typeof origineMessage === 'string' && origineMessage.endsWith("@g.us");
     
     // Group metadata handling
@@ -975,39 +975,48 @@ adams.ev.on("messages.upsert", async ({ messages }) => {
         : origineMessage;
     if (ms.key.fromMe) auteurMessage = idBot;
 
-    // Group member info
-    const membreGroupe = verifGroupe ? ms.key.participant || '' : '';
-    const utilisateur = mentionedJids.length > 0 
-        ? mentionedJids[0] 
-        : msgRepondu 
-            ? auteurMsgRepondu 
-            : '';
+    // Standardize JID format for comparison
+    function standardizeJid(jid) {
+        if (!jid) return '';
+        jid = decodeJid(jid);
+        // Remove any suffix after @ if it's not s.whatsapp.net or g.us
+        if (!jid.endsWith('@s.whatsapp.net') && !jid.endsWith('@g.us')) {
+            jid = jid.split('@')[0] + '@s.whatsapp.net';
+        }
+        return jid;
+    }
 
-    // Define SUDO numbers with full JIDs
+    // Define SUDO numbers (without @s.whatsapp.net)
     const SUDO_NUMBERS = [
-        "254710772666@s.whatsapp.net",
-        "254106727597@s.whatsapp.net",
-        "254727716045@s.whatsapp.net"
+        "254710772665",
+        "254106727597",
+        "254727716045"
     ];
 
-    const botJid = `${adams.user?.id.split(":")[0]}@s.whatsapp.net`;
-    const ownerJid = `${conf.OWNER_NUMBER}@s.whatsapp.net`;
+    const botJid = standardizeJid(adams.user?.id);
+    const ownerJid = standardizeJid(conf.OWNER_NUMBER);
 
     // Super users who can always use commands
     const superUser = [
         ownerJid,
         botJid,
-        ...SUDO_NUMBERS
+        ...SUDO_NUMBERS.map(num => standardizeJid(num))
     ];
 
-    // Check if sender is superUser
-    const isSuperUser = superUser.includes(auteurMessage);
+    // Check if sender is superUser (with proper JID comparison)
+    const isSuperUser = superUser.includes(standardizeJid(auteurMessage));
+
+    // Debug logging (you can remove this after testing)
+    console.log('Current MODE:', conf.MODE);
+    console.log('Author JID:', standardizeJid(auteurMessage));
+    console.log('Is superUser:', isSuperUser);
+    console.log('Super users list:', superUser);
 
     let verifAdmin = false;
     let botIsAdmin = false;
     if (verifGroupe && infosGroupe) {
-        const admins = infosGroupe.participants.filter(p => p.admin).map(p => p.id);
-        verifAdmin = admins.includes(auteurMessage);
+        const admins = infosGroupe.participants.filter(p => p.admin).map(p => standardizeJid(p.id));
+        verifAdmin = admins.includes(standardizeJid(auteurMessage));
         botIsAdmin = admins.includes(botJid);
     }
 
@@ -1029,17 +1038,15 @@ adams.ev.on("messages.upsert", async ({ messages }) => {
             : null;
 
         if (cmd) {
-            // MODE check - owner and sudo can always use commands
-            const isOwnerOrSudo = superUser.includes(auteurMessage);
-            
-            if (conf.MODE?.toLowerCase() === "no" && !isOwnerOrSudo) {
+            // MODE check - superUser can always bypass restrictions
+            if (conf.MODE?.toLowerCase() === "no" && !isSuperUser) {
                 console.log(`Command blocked for ${auteurMessage} - MODE is set to "no"`);
                 try {
                     await adams.sendMessage(origineMessage, { 
-                        text: "❌ Command mode is currently restricted to owner only.",
+                        text: "❌ Command mode is currently restricted to owner/sudo only.",
                         ...createContext(auteurMessage, {
                             title: "Restricted Mode",
-                            body: "Only owner can use commands"
+                            body: "Only owner/sudo can use commands"
                         })
                     }, { quoted: ms });
                 } catch (err) {
@@ -1090,12 +1097,12 @@ adams.ev.on("messages.upsert", async ({ messages }) => {
                     verifGroupe,
                     infosGroupe,
                     nomGroupe,
-                    auteurMessage,
-                    utilisateur,
-                    membreGroupe,
+                    auteurMessage: standardizeJid(auteurMessage), // standardized
+                    utilisateur: standardizeJid(utilisateur), // standardized
+                    membreGroupe: standardizeJid(membreGroupe), // standardized
                     origineMessage,
                     msgRepondu,
-                    auteurMsgRepondu,
+                    auteurMsgRepondu: standardizeJid(auteurMsgRepondu), // standardized
                     isSuperUser
                 });
 
@@ -1116,6 +1123,7 @@ adams.ev.on("messages.upsert", async ({ messages }) => {
         }
     }
 });
+ 
 //===============================================================================================================
 
 // Handle connection updates
