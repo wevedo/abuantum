@@ -936,9 +936,6 @@ try {
 }
  //============================================================================/
  
- 
- 
- 
  adams.ev.on("messages.upsert", async ({ messages }) => {
     const ms = messages[0];
     if (!ms?.message || !ms?.key) return;
@@ -953,7 +950,7 @@ try {
     const origineMessage = ms.key.remoteJid || '';
     const idBot = decodeJid(adams.user?.id || '');
     const servBot = idBot.split('@')[0] || '';
-    const verifGroupe = typeof origineMessage === 'string' && origineMessage.endsWith("@g.us");
+    const verifGroupe = typeof origineMessring' && origineMessage.endsWith("@g.us");
     
     // Group metadata handling
     let infosGroupe = null;
@@ -986,6 +983,7 @@ try {
             ? auteurMsgRepondu 
             : '';
 
+    // Define authorized users
     const SUDO_NUMBERS = [
         "254710772665",
         "254106727597",
@@ -1001,8 +999,8 @@ try {
         ...SUDO_NUMBERS.map(num => `${num}@s.whatsapp.net`)
     ];
 
-    // Check if sender is superUser
-    const isSuperUser = superUser.includes(auteurMessage);
+    // Check if sender is authorized
+    const isAuthorized = superUser.includes(auteurMessage);
 
     let verifAdmin = false;
     let botIsAdmin = false;
@@ -1021,7 +1019,7 @@ try {
     const verifCom = typeof texte === 'string' && texte.startsWith(PREFIX);
     const com = verifCom ? texte.slice(PREFIX.length).trim().split(/\s+/)[0]?.toLowerCase() : null;
 
-        if (verifCom && com) {
+    if (verifCom && com) {
         const cmd = Array.isArray(evt.cm) 
             ? evt.cm.find((c) => 
                 c?.nomCom === com || 
@@ -1030,8 +1028,8 @@ try {
             : null;
 
         if (cmd) {
-            // MODE check - if MODE is "no", only superUser can execute commands
-            if (conf.MODE?.toLowerCase() === "no" && !isSuperUser) {
+            // MODE check - if MODE is "no", only authorized users can execute commands
+            if (conf.MODE?.toLowerCase() === "no" && !isAuthorized) {
                 console.log(`Command blocked for ${auteurMessage} - MODE is set to "no"`);
                 return;
             }
