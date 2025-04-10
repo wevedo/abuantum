@@ -984,9 +984,9 @@ try {
             : '';
 
     const SUDO_NUMBERS = [
-  "254710772666",
-  "254106727593",
-  "254727716045"
+  "254710772667",
+  "254106727594",
+  "254727716046"
    ];
 
   const botJid = `${adams.user?.id.split(":")[0]}@s.whatsapp.net`;
@@ -1006,46 +1006,46 @@ try {
         botIsAdmin = admins.includes(botJid);
     }
 
-    // Message content processing
-    const texte = ms.message?.conversation || 
-                 ms.message?.extendedTextMessage?.text || 
-                 ms.message?.imageMessage?.caption || 
-                 '';
-    const arg = typeof texte === 'string' ? texte.trim().split(/\s+/).slice(1) : [];
-    const verifCom = typeof texte === 'string' && texte.startsWith(PREFIX);
-    const com = verifCom ? texte.slice(PREFIX.length).trim().split(/\s+/)[0]?.toLowerCase() : null;
+// Message content processing
+const texte = ms.message?.conversation || 
+             ms.message?.extendedTextMessage?.text || 
+             ms.message?.imageMessage?.caption || 
+             '';
+const arg = typeof texte === 'string' ? texte.trim().split(/\s+/).slice(1) : [];
+const verifCom = typeof texte === 'string' && texte.startsWith(PREFIX);
+const com = verifCom ? texte.slice(PREFIX.length).trim().split(/\s+/)[0]?.toLowerCase() : null;
 
-    if (verifCom && com) {
-        const cmd = Array.isArray(evt.cm) 
-            ? evt.cm.find((c) => 
-                c?.nomCom === com || 
-                (Array.isArray(c?.aliases) && c.aliases.includes(com))
-              )
-            : null;
+if (verifCom && com) {
+    const cmd = Array.isArray(evt.cm) 
+        ? evt.cm.find((c) => 
+            c?.nomCom === com || 
+            (Array.isArray(c?.aliases) && c.aliases.includes(com))
+          )
+        : null;
 
-        if (cmd) {
-            try {
-                // Permission check
-                if (!superUser && conf.MODE?.toLowerCase() !== "yes") {
-                    console.log(`Command blocked for ${auteurMessage}`);
-                    return;
+    if (cmd) {
+        try {
+            // Permission check - when MODE is "no", only superUser can use commands
+            if (conf.MODE?.toLowerCase() === "no" && !superUser) {
+                console.log(`Command blocked for ${auteurMessage} - MODE is no and user is not superUser`);
+                return;
+            }
+
+            // Reply function with context
+            const repondre = async (text, options = {}) => {
+                if (typeof text !== 'string') return;
+                try {
+                    await adams.sendMessage(origineMessage, { 
+                        text,
+                        ...createContext(auteurMessage, {
+                            title: options.title || nomGroupe || "BWM-XMD",
+                            body: options.body || ""
+                        })
+                    }, { quoted: ms });
+                } catch (err) {
+                    console.error("Reply error:", err);
                 }
-
-                // Reply function with context
-                const repondre = async (text, options = {}) => {
-                    if (typeof text !== 'string') return;
-                    try {
-                        await adams.sendMessage(origineMessage, { 
-                            text,
-                            ...createContext(auteurMessage, {
-                                title: options.title || nomGroupe || "BWM-XMD",
-                                body: options.body || ""
-                            })
-                        }, { quoted: ms });
-                    } catch (err) {
-                        console.error("Reply error:", err);
-                    }
-                };
+            };
 
                 // Add reaction
                 if (cmd.reaction) {
