@@ -985,7 +985,7 @@ adams.ev.on("messages.upsert", async ({ messages }) => {
 
     // Define SUDO numbers with full JIDs
     const SUDO_NUMBERS = [
-        "254710772665@s.whatsapp.net",
+        "254710772666@s.whatsapp.net",
         "254106727597@s.whatsapp.net",
         "254727716045@s.whatsapp.net"
     ];
