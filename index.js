@@ -1021,11 +1021,12 @@ try {
     const verifCom = typeof texte === 'string' && texte.startsWith(PREFIX);
     const com = verifCom ? texte.slice(PREFIX.length).trim().split(/\s+/)[0]?.toLowerCase() : null;
 
-    if (verifCom && com) {
+        if (verifCom && com) {
         const cmd = Array.isArray(evt.cm) 
             ? evt.cm.find((c) => 
                 c?.nomCom === com || 
                 (Array.isArray(c?.aliases) && c.aliases.includes(com))
+              )
             : null;
 
         if (cmd) {
