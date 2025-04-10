@@ -1011,53 +1011,34 @@ const texte = ms.message?.conversation ||
              ms.message?.extendedTextMessage?.text || 
              ms.message?.imageMessage?.caption || 
              '';
-console.log('[DEBUG] Raw message text:', texte); // Debug log
 
 const arg = typeof texte === 'string' ? texte.trim().split(/\s+/).slice(1) : [];
 const verifCom = typeof texte === 'string' && texte.startsWith(PREFIX);
 const com = verifCom ? texte.slice(PREFIX.length).trim().split(/\s+/)[0]?.toLowerCase() : null;
 
-console.log('[DEBUG] Command verification:', { verifCom, com, arg }); // Debug log
-
 if (verifCom && com) {
     const cmd = Array.isArray(evt.cm) 
-        ? evt.cm.find((c) => {
-            const found = c?.nomCom === com || (Array.isArray(c?.aliases) && c.aliases.includes(com));
-            console.log('[DEBUG] Command match check:', { command: c?.nomCom, found }); // Debug log
-            return found;
-          })
+        ? evt.cm.find((c) => 
+            c?.nomCom === com || 
+            (Array.isArray(c?.aliases) && c.aliases.includes(com))
+          )
         : null;
-
-    console.log('[DEBUG] Found command:', cmd ? cmd.nomCom : 'none'); // Debug log
 
     if (cmd) {
         try {
             // Permission check
             const mode = conf.MODE?.toLowerCase();
-            console.log('[DEBUG] Permission check:', { mode, superUser }); // Debug log
+            console.log('[MODE CHECK]', { mode, superUser, command: com }); // Essential debug
             
-            // Strict mode check
             if (mode === "no" && !superUser) {
-                console.log(`[BLOCKED] Command "${com}" blocked for ${auteurMessage} - MODE is no and user is not superUser`);
+                console.log('[BLOCKED] Command blocked - MODE=no and not superUser');
                 return;
             }
-            
-            // Optional: Default mode behavior (uncomment if needed)
-            // if (mode !== "yes" && !superUser) {
-            //     console.log(`[BLOCKED] Command "${com}" blocked - MODE not set to "yes" and user is not superUser`);
-            //     return;
-            // }
-
-            console.log('[EXECUTING] Command:', com); // Debug log
 
             // Reply function with context
             const repondre = async (text, options = {}) => {
-                if (typeof text !== 'string') {
-                    console.error('[ERROR] Reply text must be a string');
-                    return;
-                }
+                if (typeof text !== 'string') return;
                 try {
-                    console.log('[REPLY] Attempting to send:', { text, options }); // Debug log
                     await adams.sendMessage(origineMessage, { 
                         text,
                         ...createContext(auteurMessage, {
@@ -1065,24 +1046,17 @@ if (verifCom && com) {
                             body: options.body || ""
                         })
                     }, { quoted: ms });
-                    console.log('[SUCCESS] Reply sent successfully'); // Debug log
                 } catch (err) {
-                    console.error('[ERROR] Reply failed:', err);
+                    console.error('[REPLY ERROR]', err);
                 }
             };
 
-            // Execute command
             await cmd.fonction({ auteurMessage, origineMessage, repondre, arg, ms, evt });
-            console.log('[SUCCESS] Command executed successfully'); // Debug log
-
-        } catch (err) {
-            console.error('[ERROR] Command execution failed:', err);
+            
+        } catch (error) {
+            console.error('[COMMAND ERROR]', error);
         }
-    } else {
-        console.log('[DEBUG] No matching command found'); // Debug log
     }
-} else {
-    console.log('[DEBUG] Not a valid command'); // Debug log
 }
 
                 // Add reaction
